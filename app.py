@@ -12,17 +12,14 @@ st.set_page_config(
 )
 
 # ----------------------------------------------------------------
-# custom CSS - makes it look professional not default streamlit
+# custom CSS
 # ----------------------------------------------------------------
 st.markdown("""
     <style>
-    /* main background */
     .stApp {
         background-color: #0f0f0f;
         color: #f0f0f0;
     }
-
-    /* header strip */
     .header-box {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
         border-radius: 16px;
@@ -42,18 +39,18 @@ st.markdown("""
         color: #a0a0b0;
         font-size: 1rem;
         margin-top: 0.5rem;
+        margin-bottom: 0;
     }
-
-    /* input card */
-    .input-card {
-        background-color: #1a1a2e;
-        border-radius: 12px;
-        padding: 2rem;
-        border: 1px solid #2a2a4a;
+    .dataset-note {
+        text-align: center;
+        color: #a0a0b0;
+        font-size: 0.85rem;
         margin-bottom: 1.5rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        background-color: #1a1a2e;
+        border: 1px solid #2a2a4a;
     }
-
-    /* result box */
     .result-box {
         background: linear-gradient(135deg, #0f3460, #e94560);
         border-radius: 16px;
@@ -79,15 +76,11 @@ st.markdown("""
         color: #ffffff88;
         margin-top: 0.5rem;
     }
-
-    /* selectbox and input labels */
     .stSelectbox label, .stNumberInput label {
         color: #a0a0b0 !important;
         font-size: 0.9rem !important;
         font-weight: 500 !important;
     }
-
-    /* predict button */
     .stButton > button {
         background: #e94560;
         color: white;
@@ -98,15 +91,12 @@ st.markdown("""
         font-weight: 700;
         width: 100%;
         letter-spacing: 0.5px;
-        transition: opacity 0.2s;
     }
     .stButton > button:hover {
         background: #c73652;
         color: white;
         border: none;
     }
-
-    /* hide streamlit default elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -119,15 +109,13 @@ st.markdown("""
 model = pickle.load(open('LinearRegressionModel.pkl', 'rb'))
 
 # ----------------------------------------------------------------
-# load cleaned data to get dropdown options
-# same values model was trained on
+# load cleaned data for dropdowns
 # ----------------------------------------------------------------
 car = pd.read_csv('Cleaned_Car.csv')
 
-companies   = sorted(car['company'].unique())
-car_names   = sorted(car['name'].unique())
-fuel_types  = car['fuel_type'].unique()
-years       = sorted(car['year'].unique(), reverse=True)
+companies  = sorted(car['company'].unique())
+fuel_types = car['fuel_type'].unique()
+years      = sorted(car['year'].unique(), reverse=True)
 
 # ----------------------------------------------------------------
 # header
@@ -139,19 +127,23 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# ----------------------------------------------------------------
-# input form
-# ----------------------------------------------------------------
-st.markdown('<div class="input-card">', unsafe_allow_html=True)
+# dataset note
+st.markdown("""
+    <div class="dataset-note">
+        ⚠️ Dataset sourced from Indian used car market (Quikr). Prices are in INR.
+    </div>
+""", unsafe_allow_html=True)
 
+# ----------------------------------------------------------------
+# input form - no wrapper div, straight into columns
+# ----------------------------------------------------------------
 col1, col2 = st.columns(2)
 
 with col1:
     company = st.selectbox("Company", companies)
 
 with col2:
-    # filter car names by selected company so dropdown is cleaner
-    # only show names that belong to selected company
+    # filter names by selected company
     filtered_names = sorted(car[car['company'] == company]['name'].unique())
     name = st.selectbox("Model", filtered_names)
 
@@ -172,31 +164,28 @@ kms_driven = st.number_input(
     help="How many kilometres has this car been driven?"
 )
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ----------------------------------------------------------------
 # predict button
 # ----------------------------------------------------------------
 if st.button("Predict Price"):
 
-    # build input dataframe - same columns model was trained on
     input_data = pd.DataFrame(
         [[name, company, year, kms_driven, fuel_type]],
         columns=['name', 'company', 'year', 'kms_driven', 'fuel_type']
     )
 
-    # predict
     prediction = model.predict(input_data)
     price = int(prediction[0])
 
-    # format price nicely
-    # convert to lakhs if above 1 lac
+    # format price
     if price >= 100000:
         price_display = f"₹ {price/100000:.2f} Lac"
     else:
         price_display = f"₹ {price:,}"
 
-    # show result
+    # result card
     st.markdown(f"""
         <div class="result-box">
             <div class="label">Estimated Market Price</div>
@@ -207,9 +196,9 @@ if st.button("Predict Price"):
         </div>
     """, unsafe_allow_html=True)
 
-    # extra context below result
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # metrics row
     col_a, col_b, col_c = st.columns(3)
     with col_a:
         st.metric("Year", year)
